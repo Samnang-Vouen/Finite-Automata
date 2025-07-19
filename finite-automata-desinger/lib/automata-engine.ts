@@ -14,6 +14,20 @@ export interface MinimizationResult {
       }
     }
   }
+  algorithm: "Hopcroft" // Algorithm used
+  partitioningSteps: {
+    step: number
+    description: string
+    partitionsBefore: string[][]
+    partitionsAfter: string[][]
+    splittingPartition?: string[]
+    symbolsChecked: string[]
+    splitDetails: {
+      symbol: string
+      splitOccurred: boolean
+      splitResult?: string[][]
+    }[]
+  }[]
 }
 
 export class AutomataEngine {
@@ -448,6 +462,7 @@ export class AutomataEngine {
     return completeDFA
   }
 
+  // Hopcroft's Algorithm for DFA Minimization
   static minimizeDFAWithDetails(dfa: Automaton): MinimizationResult {
     if (dfa.type !== "DFA") {
       return {
@@ -457,10 +472,12 @@ export class AutomataEngine {
         partitions: [],
         equivalentStates: {},
         combinedTransitions: {},
+        algorithm: "Hopcroft",
+        partitioningSteps: [],
       }
     }
 
-    console.log("=== Starting DFA Minimization with Details ===")
+    console.log("=== Starting Hopcroft's DFA Minimization Algorithm ===")
 
     // Step 1: Make DFA complete by adding dead state if necessary
     const completeDFA = this.makeCompleteDFA(dfa)
@@ -474,27 +491,96 @@ export class AutomataEngine {
       finalStates: completeDFA.finalStates.filter((s) => reachableStates.has(s)),
     }
 
-    // Step 3: Apply Myhill-Nerode theorem based minimization
+    // Step 3: Apply Hopcroft's Algorithm
     const alphabet = Array.from(new Set(reachableDFA.transitions.map((t) => t.symbol)))
-    let partitions = this.initialPartition(reachableDFA)
+    const partitioningSteps: MinimizationResult["partitioningSteps"] = []
 
+    // Initial partition: separate final and non-final states
+    const finalStates = new Set(reachableDFA.finalStates)
+    const nonFinalStates = reachableDFA.states.map((s) => s.id).filter((s) => !finalStates.has(s))
+
+    const partitions: string[][] = []
+    if (nonFinalStates.length > 0) {
+      partitions.push(nonFinalStates)
+    }
+    if (reachableDFA.finalStates.length > 0) {
+      partitions.push([...reachableDFA.finalStates])
+    }
+
+    partitioningSteps.push({
+      step: 0,
+      description: "Initial partition: separate final and non-final states",
+      partitionsBefore: [],
+      partitionsAfter: partitions.map((p) => [...p]),
+      symbolsChecked: [],
+      splitDetails: [],
+    })
+
+    console.log("Initial partitions:", partitions)
+
+    // Hopcroft's Algorithm: Iteratively refine partitions
+    let stepCounter = 1
     let changed = true
+
     while (changed) {
       changed = false
-      const newPartitions: string[][] = []
 
-      for (const partition of partitions) {
-        const subPartitions = this.refinePartition(reachableDFA, partition, partitions, alphabet)
+      for (let i = 0; i < partitions.length && !changed; i++) {
+        const partition = partitions[i]
 
-        if (subPartitions.length > 1) {
-          changed = true
+        if (partition.length <= 1) {
+          continue
         }
 
-        newPartitions.push(...subPartitions)
-      }
+        const partitionsBefore = partitions.map((p) => [...p])
+        const splitDetails: MinimizationResult["partitioningSteps"][0]["splitDetails"] = []
 
-      partitions = newPartitions
+        // Try ALL symbols for this partition
+        for (const symbol of alphabet) {
+          const subPartitions = this.splitPartitionHopcroft(reachableDFA, partition, partitions, symbol)
+
+          splitDetails.push({
+            symbol,
+            splitOccurred: subPartitions.length > 1,
+            splitResult: subPartitions.length > 1 ? subPartitions.map((p) => [...p]) : undefined,
+          })
+
+          if (subPartitions.length > 1) {
+            // Replace the original partition with its sub-partitions
+            partitions.splice(i, 1, ...subPartitions)
+            changed = true
+
+            partitioningSteps.push({
+              step: stepCounter++,
+              description: `Analyzing partition {${partition.join(", ")}} with all symbols`,
+              partitionsBefore,
+              partitionsAfter: partitions.map((p) => [...p]),
+              splittingPartition: [...partition],
+              symbolsChecked: [...alphabet],
+              splitDetails,
+            })
+
+            console.log(`Split partition [${partition.join(", ")}] using symbols:`, splitDetails)
+            break // Move to next iteration after a split
+          }
+        }
+
+        // If no split occurred, still record the step to show all symbols were checked
+        if (!changed) {
+          partitioningSteps.push({
+            step: stepCounter++,
+            description: `Checked partition {${partition.join(", ")}} with all symbols - no split needed`,
+            partitionsBefore,
+            partitionsAfter: partitions.map((p) => [...p]),
+            splittingPartition: [...partition],
+            symbolsChecked: [...alphabet],
+            splitDetails,
+          })
+        }
+      }
     }
+
+    console.log("Final partitions:", partitions)
 
     // Step 4: Build minimized DFA with detailed mapping
     const stateMapping = new Map<string, string>()
@@ -575,7 +661,45 @@ export class AutomataEngine {
       partitions,
       equivalentStates,
       combinedTransitions,
+      algorithm: "Hopcroft",
+      partitioningSteps,
     }
+  }
+
+  // Hopcroft's partition splitting method
+  private static splitPartitionHopcroft(
+    dfa: Automaton,
+    partition: string[],
+    allPartitions: string[][],
+    symbol: string,
+  ): string[][] {
+    if (partition.length <= 1) return [partition]
+
+    // Group states by which partition their transition on 'symbol' leads to
+    const transitionGroups = new Map<number, string[]>()
+
+    for (const state of partition) {
+      const transition = dfa.transitions.find((t) => t.from === state && t.symbol === symbol)
+      let targetPartitionIndex = -1
+
+      if (transition) {
+        // Find which partition the target state belongs to
+        for (let i = 0; i < allPartitions.length; i++) {
+          if (allPartitions[i].includes(transition.to)) {
+            targetPartitionIndex = i
+            break
+          }
+        }
+      }
+
+      if (!transitionGroups.has(targetPartitionIndex)) {
+        transitionGroups.set(targetPartitionIndex, [])
+      }
+      transitionGroups.get(targetPartitionIndex)!.push(state)
+    }
+
+    // Return the groups as separate partitions
+    return Array.from(transitionGroups.values())
   }
 
   static minimizeDFA(dfa: Automaton): Automaton {
@@ -602,66 +726,6 @@ export class AutomataEngine {
     }
 
     return reachable
-  }
-
-  // Initial partition: separate final and non-final states (Myhill-Nerode theorem)
-  private static initialPartition(dfa: Automaton): string[][] {
-    const finalStates = new Set(dfa.finalStates)
-    const nonFinalStates = dfa.states.map((s) => s.id).filter((s) => !finalStates.has(s))
-
-    const partitions: string[][] = []
-
-    if (nonFinalStates.length > 0) {
-      partitions.push(nonFinalStates)
-    }
-
-    if (dfa.finalStates.length > 0) {
-      partitions.push([...dfa.finalStates])
-    }
-
-    return partitions
-  }
-
-  // Refine partition based on transition behavior (Myhill-Nerode theorem)
-  private static refinePartition(
-    dfa: Automaton,
-    partition: string[],
-    allPartitions: string[][],
-    alphabet: string[],
-  ): string[][] {
-    if (partition.length <= 1) return [partition]
-
-    const subPartitions: Map<string, string[]> = new Map()
-
-    for (const state of partition) {
-      const signature = this.getStateSignature(dfa, state, allPartitions, alphabet)
-
-      if (!subPartitions.has(signature)) {
-        subPartitions.set(signature, [])
-      }
-
-      subPartitions.get(signature)!.push(state)
-    }
-
-    return Array.from(subPartitions.values())
-  }
-
-  // Get signature of state based on where it transitions on each symbol (Myhill-Nerode theorem)
-  private static getStateSignature(dfa: Automaton, state: string, partitions: string[][], alphabet: string[]): string {
-    const signature: string[] = []
-
-    for (const symbol of alphabet) {
-      const transition = dfa.transitions.find((t) => t.from === state && t.symbol === symbol)
-
-      if (transition) {
-        const targetPartition = partitions.findIndex((p) => p.includes(transition.to))
-        signature.push(targetPartition.toString())
-      } else {
-        signature.push("-1") // No transition (should not happen in complete DFA)
-      }
-    }
-
-    return signature.join(",")
   }
 
   // Generate alphabetic state names: A, B, C, ..., Z, AA, AB, AC, ...

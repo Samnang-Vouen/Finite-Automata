@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Eye, EyeOff, ArrowRight } from "lucide-react"
+import { Eye, EyeOff, ArrowRight, Zap, ArrowDown, CheckCircle, XCircle } from "lucide-react"
 import type { MinimizationResult } from "@/lib/automata-engine"
 
 interface MinimizationDetailsProps {
@@ -14,7 +14,8 @@ interface MinimizationDetailsProps {
 }
 
 export function MinimizationDetails({ minimizationResult, showOriginalDFA, onToggleView }: MinimizationDetailsProps) {
-  const { originalDFA, minimizedDFA, equivalentStates, combinedTransitions } = minimizationResult
+  const { originalDFA, minimizedDFA, equivalentStates, combinedTransitions, algorithm, partitioningSteps } =
+    minimizationResult
 
   return (
     <div className="space-y-4">
@@ -22,7 +23,13 @@ export function MinimizationDetails({ minimizationResult, showOriginalDFA, onTog
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center justify-between">
-            DFA Minimization Result
+            <div className="flex items-center gap-2">
+              DFA Minimization Result
+              <Badge variant="outline" className="text-xs flex items-center gap-1">
+                <Zap className="w-3 h-3" />
+                {algorithm}'s Algorithm
+              </Badge>
+            </div>
             <Button variant="outline" size="sm" onClick={onToggleView}>
               {showOriginalDFA ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
               {showOriginalDFA ? "Show Minimized DFA" : "Show Original DFA"}
@@ -54,6 +61,159 @@ export function MinimizationDetails({ minimizationResult, showOriginalDFA, onTog
       {/* State Equivalence Classes and Combined Transitions - Only show when viewing minimized DFA */}
       {!showOriginalDFA && (
         <>
+          {/* Hopcroft's Algorithm Steps */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Zap className="w-4 h-4" />
+                Hopcroft's Algorithm Steps
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {partitioningSteps.map((step, index) => (
+                  <div key={index} className="border rounded-lg overflow-hidden">
+                    {/* Step Header */}
+                    <div className="bg-gray-50 p-3 border-b">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">
+                          Step {step.step}
+                        </Badge>
+                        <span className="text-sm font-medium">{step.description}</span>
+                      </div>
+                    </div>
+
+                    {/* Step Content */}
+                    <div className="p-3 space-y-3">
+                      {/* Before Partitions (only show if not initial step) */}
+                      {step.step > 0 && step.partitionsBefore.length > 0 && (
+                        <div>
+                          <div className="text-xs font-medium text-muted-foreground mb-2">Before:</div>
+                          <div className="flex flex-wrap gap-2">
+                            {step.partitionsBefore.map((partition, pIndex) => (
+                              <Badge
+                                key={pIndex}
+                                variant={
+                                  step.splittingPartition &&
+                                  JSON.stringify(partition.sort()) === JSON.stringify(step.splittingPartition.sort())
+                                    ? "destructive"
+                                    : "secondary"
+                                }
+                                className="text-xs"
+                              >
+                                {"{"}
+                                {partition.join(", ")}
+                                {"}"}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Symbol Analysis Details */}
+                      {step.splitDetails && step.splitDetails.length > 0 && (
+                        <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                          <div className="text-xs font-medium text-blue-800 mb-3">
+                            {step.splittingPartition && (
+                              <>
+                                Analyzing partition {"{"}
+                                {step.splittingPartition.join(", ")}
+                                {"}"} with all symbols:
+                              </>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {step.splitDetails.map((detail, dIndex) => (
+                              <div
+                                key={dIndex}
+                                className={`p-2 rounded border text-xs ${
+                                  detail.splitOccurred
+                                    ? "bg-green-100 border-green-300 text-green-800"
+                                    : "bg-gray-100 border-gray-300 text-gray-700"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 mb-1">
+                                  {detail.splitOccurred ? (
+                                    <CheckCircle className="w-3 h-3 text-green-600" />
+                                  ) : (
+                                    <XCircle className="w-3 h-3 text-gray-500" />
+                                  )}
+                                  <span className="font-mono font-medium">Symbol '{detail.symbol}'</span>
+                                  <span className="text-xs">
+                                    {detail.splitOccurred ? "→ Split occurred" : "→ No split"}
+                                  </span>
+                                </div>
+                                {detail.splitOccurred && detail.splitResult && (
+                                  <div className="mt-2">
+                                    <div className="text-xs font-medium mb-1">Split result:</div>
+                                    <div className="flex flex-wrap gap-1">
+                                      {detail.splitResult.map((subPartition, spIndex) => (
+                                        <Badge key={spIndex} variant="outline" className="text-xs">
+                                          {"{"}
+                                          {subPartition.join(", ")}
+                                          {"}"}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Arrow */}
+                      {step.step > 0 && (
+                        <div className="flex justify-center">
+                          <ArrowDown className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                      )}
+
+                      {/* After Partitions */}
+                      <div>
+                        <div className="text-xs font-medium text-muted-foreground mb-2">
+                          {step.step === 0 ? "Initial partitions:" : "After:"}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {step.partitionsAfter.map((partition, pIndex) => (
+                            <Badge
+                              key={pIndex}
+                              variant={
+                                step.splitDetails &&
+                                step.splitDetails.some(
+                                  (detail) =>
+                                    detail.splitResult &&
+                                    detail.splitResult.some(
+                                      (split) => JSON.stringify(split.sort()) === JSON.stringify(partition.sort()),
+                                    ),
+                                )
+                                  ? "default"
+                                  : "secondary"
+                              }
+                              className="text-xs"
+                            >
+                              {"{"}
+                              {partition.join(", ")}
+                              {"}"}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {partitioningSteps.length === 1 && (
+                <div className="text-sm text-muted-foreground mt-3 p-3 bg-blue-50 rounded border border-blue-200">
+                  ℹ️ This DFA was already minimal - no further partitioning was needed after the initial separation of
+                  final and non-final states.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* State Equivalence Mapping */}
           <Card>
             <CardHeader>
@@ -79,7 +239,7 @@ export function MinimizationDetails({ minimizationResult, showOriginalDFA, onTog
                     <div className="text-xs text-muted-foreground">
                       {originalStates.length === 1
                         ? "Single state (no merging)"
-                        : `${originalStates.length} equivalent states merged`}
+                        : `${originalStates.length} equivalent states merged by Hopcroft's algorithm`}
                     </div>
                   </div>
                 ))}
