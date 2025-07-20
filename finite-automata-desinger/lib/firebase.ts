@@ -10,8 +10,8 @@ const firebaseConfig = {
   projectId: "automata-project-21892",
   storageBucket: "automata-project-21892.firebasestorage.app",
   messagingSenderId: "363460958354",
-  appId: "1:363460958354:web:24df70a5188bd7d2972e4b",
-  measurementId: "G-L5YHT3B1BF",
+  appId: "1:363460958354:web:957ff928579518d3972e4b",
+  measurementId: "G-2B58LPJ09H"
 }
 
 // Initialize Firebase only on client side

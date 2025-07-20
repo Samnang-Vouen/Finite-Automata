@@ -112,7 +112,7 @@ export function AutomataEditor({
     })
 
     // Store the Cytoscape instance globally for export functionality
-    ;(window as any).cytoscapeInstance = cyInstance.current
+    ;(window as unknown as { cytoscapeInstance?: cytoscape.Core | null }).cytoscapeInstance = cyInstance.current
 
     // Add click handlers for left click (set start state)
     cyInstance.current.on("tap", "node", (evt) => {
@@ -134,7 +134,7 @@ export function AutomataEditor({
           const position = { x: e.offsetX, y: e.offsetY }
           const nodeUnderCursor =
             cyInstance.current?.nodes(":selected") ||
-            cyInstance.current?.nodes((node) => {
+            cyInstance.current?.nodes().filter((node) => {
               const renderedPosition = node.renderedPosition()
               const renderedWidth = node.renderedWidth()
               const renderedHeight = node.renderedHeight()
@@ -160,7 +160,7 @@ export function AutomataEditor({
     return () => {
       cyInstance.current?.destroy()
       // Clean up global reference
-      ;(window as any).cytoscapeInstance = null
+      ;(window as unknown as { cytoscapeInstance?: cytoscape.Core | null }).cytoscapeInstance = null
     }
   }, [automaton, onSetFinalStates, onSetStartState])
 
@@ -269,10 +269,10 @@ export function AutomataEditor({
               <Label htmlFor="state-name">State Name</Label>
               <Input
                 id="state-name"
-                placeholder="e.g., q0, q1, q2..."
+                placeholder="q0"
                 value={newStateName}
                 onChange={(e) => setNewStateName(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleAddState()}
+                onKeyDown={(e) => e.key === "Enter" && handleAddState()}
               />
             </div>
             <Button onClick={handleAddState} disabled={!newStateName.trim()} className="w-full">
@@ -280,7 +280,7 @@ export function AutomataEditor({
               Add State
             </Button>
             <p className="text-xs text-muted-foreground">
-              Click state to set as start • Right-click to toggle final state • Or use the buttons in the States list
+              Click state to set as start • Use the buttons in the States list
               below
             </p>
           </CardContent>
@@ -306,7 +306,7 @@ export function AutomataEditor({
                 <Label htmlFor="symbol">Symbol</Label>
                 <Input
                   id="symbol"
-                  placeholder="a, b, e, ε"
+                  placeholder="a"
                   value={transitionSymbol}
                   onChange={(e) => setTransitionSymbol(e.target.value)}
                 />
@@ -329,7 +329,9 @@ export function AutomataEditor({
               <Plus className="w-4 h-4 mr-2" />
               Add Transition
             </Button>
-            <p className="text-xs text-muted-foreground">For epsilon transitions, use "e", "E", or "ε"</p>
+            <p className="text-xs text-muted-foreground">
+              For epsilon transitions, use &quot;e&quot;, &quot;E&quot;, or &quot;ε&quot;
+            </p>
           </CardContent>
         </Card>
       </div>

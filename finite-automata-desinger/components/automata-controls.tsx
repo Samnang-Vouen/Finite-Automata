@@ -206,7 +206,7 @@ export function AutomataControls({
                 <div className="space-y-1">
                   {analysis.nondeterministicTransitions.map((nd, index) => (
                     <div key={index} className="text-xs bg-orange-50 p-2 rounded border border-orange-200">
-                      {nd.from} on '{nd.symbol}' → {nd.destinations.join(", ")}
+                      {nd.from} on &#39;{nd.symbol}&#39; → {nd.destinations.join(", ")}
                     </div>
                   ))}
                 </div>
@@ -251,7 +251,7 @@ export function AutomataControls({
 
               {canMinimize ? (
                 <p className="text-xs text-muted-foreground">
-                  Apply the Myhill-Nerode theorem to create a minimal DFA with detailed analysis
+                  Apply the Hopcroft's Algorithm to create a minimal DFA with detailed analysis
                 </p>
               ) : (
                 <div className="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200">

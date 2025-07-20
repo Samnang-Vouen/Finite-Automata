@@ -60,7 +60,7 @@ export function StringTester({ automaton, onTest }: StringTesterProps) {
             placeholder="Enter string to test (e.g., 'aab', '101')..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleTest()}
+            onKeyDown={(e) => e.key === "Enter" && handleTest()}
             disabled={!automaton}
           />
           <Button onClick={handleTest} disabled={!automaton || !input.trim()}>
@@ -80,7 +80,7 @@ export function StringTester({ automaton, onTest }: StringTesterProps) {
               {results.map((result, index) => (
                 <div key={index} className="p-3 border rounded-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-mono text-sm">"{result.input}"</span>
+                    <span className="font-mono text-sm">&quot;{result.input}&quot;</span>
                     <Badge variant={result.accepted ? "default" : "destructive"}>
                       {result.accepted ? "Accepted" : "Rejected"}
                     </Badge>

@@ -99,38 +99,38 @@ export default function HomePage() {
   }
 
   const handleExportImage = () => {
-    // Get the Cytoscape canvas element
-    const cyContainer = document.querySelector("[data-cy-container]") as HTMLElement
-    if (!cyContainer) {
-      console.error("Cytoscape container not found")
-      return
-    }
-
-    // Try to get the Cytoscape instance from the global window object
-    const cyInstance = (window as any).cytoscapeInstance
-    if (cyInstance) {
-      try {
-        // Export as PNG
-        const png64 = cyInstance.png({
-          output: "base64uri",
-          bg: "white",
-          full: true,
-          scale: 2,
-        })
-
-        const link = document.createElement("a")
-        link.href = png64
-        link.download = `${automatonName || "automaton"}.png`
-        link.click()
-      } catch (error) {
-        console.error("Error exporting image:", error)
-        // Fallback: use html2canvas if available
+      // Get the Cytoscape canvas element
+      const cyContainer = document.querySelector("[data-cy-container]") as HTMLElement
+      if (!cyContainer) {
+        console.error("Cytoscape container not found")
+        return
+      }
+  
+      // Try to get the Cytoscape instance from the global window object
+      const cyInstance = (window as unknown as { cytoscapeInstance?: { png: (opts: object) => string } }).cytoscapeInstance
+      if (cyInstance) {
+        try {
+          // Export as PNG
+          const png64 = cyInstance.png({
+            output: "base64uri",
+            bg: "white",
+            full: true,
+            scale: 2,
+          })
+  
+          const link = document.createElement("a")
+          link.href = png64
+          link.download = `${automatonName || "automaton"}.png`
+          link.click()
+        } catch (error) {
+          console.error("Error exporting image:", error)
+          // Fallback: use html2canvas if available
+          handleExportImageFallback()
+        }
+      } else {
         handleExportImageFallback()
       }
-    } else {
-      handleExportImageFallback()
     }
-  }
 
   const handleExportImageFallback = () => {
     // Fallback method using canvas screenshot
@@ -172,7 +172,7 @@ export default function HomePage() {
     }, 100) // Small delay to avoid browser blocking multiple downloads
   }
 
-  const validateAutomatonStructure = (data: any): boolean => {
+  const validateAutomatonStructure = (data: Record<string, unknown>): boolean => {
     // Check if the imported data has the required structure
     if (!data || typeof data !== "object") {
       return false
@@ -206,7 +206,7 @@ export default function HomePage() {
     }
 
     // Validate type
-    if (!["DFA", "NFA"].includes(data.type)) {
+    if (!["DFA", "NFA"].includes(data.type as string)) {
       console.error("Type must be either 'DFA' or 'NFA'")
       return false
     }
@@ -437,7 +437,7 @@ export default function HomePage() {
                       placeholder="Enter string to test..."
                       value={testInput}
                       onChange={(e) => setTestInput(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && handleTestString()}
+                      onKeyDown={(e) => e.key === "Enter" && handleTestString()}
                     />
                     <Button onClick={handleTestString} disabled={!automaton || !testInput.trim()}>
                       <Play className="w-4 h-4 mr-2" />
@@ -451,7 +451,7 @@ export default function HomePage() {
                         <Badge variant={testResult.accepted ? "default" : "destructive"}>
                           {testResult.accepted ? "Accepted" : "Rejected"}
                         </Badge>
-                        <span className="text-sm text-muted-foreground">Input: "{testInput}"</span>
+                        <span className="text-sm text-muted-foreground">Input: &quot;{testInput}&quot;</span>
                       </div>
                       {testResult.path && (
                         <div className="text-sm text-muted-foreground">Path: {testResult.path.join(" → ")}</div>

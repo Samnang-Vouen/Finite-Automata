@@ -82,7 +82,7 @@ export class AutomataEngine {
     for (const symbol of input) {
       const nextStates = new Set<string>()
 
-      for (const state of currentStates) {
+      for (const state of Array.from(currentStates)) {
         const transitions = automaton.transitions.filter((t) => t.from === state && t.symbol === symbol)
 
         for (const transition of transitions) {
@@ -145,7 +145,8 @@ export class AutomataEngine {
     )
 
     // Check if any state-symbol pair has multiple destinations (nondeterminism)
-    for (const [key, destinations] of transitionMap.entries()) {
+    for (const entry of Array.from(transitionMap.entries())) {
+      const [key, destinations] = entry;
       if (destinations.size > 1) {
         console.log(`Nondeterminism found at ${key}: destinations = [${Array.from(destinations).join(", ")}]`)
         return true
@@ -237,7 +238,8 @@ export class AutomataEngine {
     }
 
     // Check for nondeterminism
-    for (const [key, destinations] of transitionMap.entries()) {
+    for (const entry of Array.from(transitionMap.entries())) {
+      const [key, destinations] = entry;
       if (destinations.size > 1) {
         const [from, symbol] = key.split("-")
         nondeterministicTransitions.push({
@@ -290,7 +292,7 @@ export class AutomataEngine {
         const nextStates = new Set<string>()
 
         // Find all states reachable by this symbol from current state set
-        for (const state of currentStateSet) {
+        for (const state of Array.from(currentStateSet)) {
           const transitions = nfa.transitions.filter((t) => t.from === state && t.symbol === symbol)
 
           for (const transition of transitions) {
@@ -361,7 +363,7 @@ export class AutomataEngine {
 
     // Determine final states (dead state is never final)
     const dfaFinalStates: string[] = []
-    for (const [stateSetKey, dfaStateName] of stateMap.entries()) {
+    for (const [stateSetKey, dfaStateName] of Array.from(stateMap.entries())) {
       const stateSet = this.keyToSet(stateSetKey)
       const isFinal = Array.from(stateSet).some((state) => nfa.finalStates.includes(state))
 
@@ -746,6 +748,7 @@ export class AutomataEngine {
   }
 
   private static keyToSet(key: string): Set<string> {
-    return new Set(key.split(","))
+    if (key === "") return new Set();
+    return new Set(key.split(","));
   }
 }

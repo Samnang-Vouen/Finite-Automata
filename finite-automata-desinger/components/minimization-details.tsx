@@ -27,7 +27,7 @@ export function MinimizationDetails({ minimizationResult, showOriginalDFA, onTog
               DFA Minimization Result
               <Badge variant="outline" className="text-xs flex items-center gap-1">
                 <Zap className="w-3 h-3" />
-                {algorithm}'s Algorithm
+                {algorithm}&apos;s Algorithm
               </Badge>
             </div>
             <Button variant="outline" size="sm" onClick={onToggleView}>
@@ -66,7 +66,7 @@ export function MinimizationDetails({ minimizationResult, showOriginalDFA, onTog
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Zap className="w-4 h-4" />
-                Hopcroft's Algorithm Steps
+                Hopcroft&apos;s Algorithm Steps
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -138,7 +138,7 @@ export function MinimizationDetails({ minimizationResult, showOriginalDFA, onTog
                                   ) : (
                                     <XCircle className="w-3 h-3 text-gray-500" />
                                   )}
-                                  <span className="font-mono font-medium">Symbol '{detail.symbol}'</span>
+                                  <span className="font-mono font-medium">Symbol &apos;{detail.symbol}&apos;</span>
                                   <span className="text-xs">
                                     {detail.splitOccurred ? "→ Split occurred" : "→ No split"}
                                   </span>
