@@ -11,8 +11,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: npm run build
+
+      - name: Install dependencies
+        run: npm install
         working-directory: finite-automata-desinger
+
+      - name: Build
+        run: npm run build
+        working-directory: finite-automata-desinger
+
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
