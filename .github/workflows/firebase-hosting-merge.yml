@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Install dependencies
         run: npm install
         working-directory: finite-automata-designer
@@ -26,3 +26,4 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_AUTOMATA_PROJECT_21892 }}
           channelId: live
           projectId: automata-project-21892
+          entryPoint: finite-automata-designer
